@@ -1,109 +1,73 @@
+/*
+
+MAX                         ESP
+DI (Driver Input)           19
+DE (Driver Enable Input)    4
+RE (Receiver Enable Input)  4
+RO (Receiver Output)        18
+
+
+*/
 #include <Arduino.h>
-// github link: https://github.com/4-20ma/ModbusMaster
+
+
 #include <ModbusMaster.h>
 
-/* Modbus stuff */
-#define MODBUS_DIR_PIN  4 // connect DR, RE pin of MAX485 to gpio 4
-#define MODBUS_RX_PIN 16 // Rx pin - RO 
-#define MODBUS_TX_PIN 17 // Tx pin - DI
-#define MODBUS_SERIAL_BAUD 9600 // Baud rate for esp32 and max485 communication
+#define MAX485_DE_RE 4
 
-// voltage, current and frequency data register of DDM18SD
-uint16_t data_register[3] = {0x0000, 0x1000, 0x2000};
+// half second wait for a reply
+const uint32_t TIMEOUT = 500UL;
 
-//Initialize the ModbusMaster object as node
-ModbusMaster node;
+// canned message to your RS485 device
+uint8_t msg[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x03, 0x05, 0xCB};
 
-// Pin 4 made high for Modbus transmision mode
-void modbusPreTransmission()
-{
-  delay(500);
-  digitalWrite(MODBUS_DIR_PIN, HIGH);
-}
-// Pin 4 made low for Modbus receive mode
-void modbusPostTransmission()
-{
-  digitalWrite(MODBUS_DIR_PIN, LOW);
-  delay(500);
+void setup() {
+  Serial.begin(38400);
+  Serial1.begin(9600, SERIAL_8N1, 18, 19);
+  pinMode(MAX485_DE_RE, OUTPUT);
+  digitalWrite(MAX485_DE_RE, LOW);
+  delay(1000);
 }
 
-
-void setup()
+void printHexByte(byte b)
 {
-  //  esp serial communication
-  Serial.begin(115200);
-  pinMode(MODBUS_DIR_PIN, OUTPUT);
-  digitalWrite(MODBUS_DIR_PIN, LOW);
+  Serial.print((b >> 4) & 0xF, HEX);
+  Serial.print(b & 0xF, HEX);
+  Serial.print(' ');
+}
 
-  //Serial2.begin(baud-rate, protocol, RX pin, TX pin);.
-  Serial2.begin(MODBUS_SERIAL_BAUD, SERIAL_8E1, MODBUS_RX_PIN, MODBUS_TX_PIN);
-  Serial2.setTimeout(200);
-  //modbus slave ID 14
-  node.begin(1, Serial2);
+void printHexMessage( uint8_t values[], uint8_t sz ) {
+  for (uint8_t i = 0; i < sz; i++) {
+    printHexByte( values[i] );
+  }
+  Serial.println();
+}
 
-//  callbacks allow us to configure the RS485 transceiver correctly
-   node.preTransmission(modbusPreTransmission);
-   node.postTransmission(modbusPostTransmission);
+
+
+void loop() {
+  uint32_t startTime = 0;
+
+  Serial.print("TX: ");
+  printHexMessage( msg, sizeof(msg) );
+
+  // send the command
+  digitalWrite(MAX485_DE_RE, HIGH);
+  delay( 10 );
+  Serial1.write( msg, sizeof(msg) );
+  Serial1.flush();
+  digitalWrite(MAX485_DE_RE, LOW);
+
+  Serial.print("RX: ");
   
-  }
-
-void loop()
-{
-    uint8_t result;
-    uint16_t data[2];
-    int i;
-    float reading;
-
-for(i=0; i<=2; i++){
-Serial.print(node.readInputRegisters(data_register[i], 1));
-delay(200);
-Serial.println(" ...");
-}
-/*
-    for(i=0; i<=2; i++){
-      //Modbus function 0x04 Read Input Registers according to energy meter datasheet
-      result = node.readInputRegisters(data_register[i], 1);
-        if (result == node.ku8MBSuccess) {
-          Serial.println("Success, Received data: ");
-          
-          //Retrieve the data from getResponseBuffer(uint8_t u8Index) function.
-          //that is return 16-bit data. our energy meter return 32-bit data everytime.
-          //that's why, we take the value to a array called data
-           data[0]=node.getResponseBuffer(0x00);
-           data[1]=node.getResponseBuffer(0x01);
-           
-           //read voltage
-           if(data_register[i] == 0x0000){
-            Serial.print("Volatge: ");
-            // we just convert the uint16_t type data array to float type using type casting
-            reading = *((float *)data);
-            Serial.print(reading);
-            Serial.println(" Volt");
-           }
-           //read current
-           if(data_register[i] == 0x0008){
-            Serial.print("Current: ");
-             // we just convert the uint16_t type data array to float type using type casting
-            reading = *((float *)data);
-            Serial.print(reading);
-            Serial.println(" Amps");
-           }
-           //read Frequency
-           if(data_register[i] == 0x002A){
-            Serial.print("Frequency: ");
-             // we just convert the uint16_t type data array to float type using type casting
-            reading = *((float *)data);
-            Serial.print(reading);
-            Serial.println(" Hz");
-           }
-        } else {
-          Serial.print("Failed, Response Code: ");
-          Serial.print(result, HEX);
-          Serial.println("");
-          delay(5000); 
-        }
-      
+  // read any data received and print it out
+  startTime = millis();
+  while ( millis() - startTime <= TIMEOUT ) {
+    if (Serial1.available()) {
+      printHexByte(Serial1.read());
     }
-*/
-    delay(1000);
   }
+  Serial.println();
+  delay(2000);
+}
+
