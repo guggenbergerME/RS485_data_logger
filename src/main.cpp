@@ -10,9 +10,6 @@ RO (Receiver Output)        18
 */
 #include <Arduino.h>
 
-
-#include <ModbusMaster.h>
-
 #define MAX485_DE_RE 4
 
 // half second wait for a reply
@@ -34,7 +31,7 @@ void printHexByte(byte b)
   Serial.print((b >> 4) & 0xF, HEX);
   Serial.print(b & 0xF, HEX);
   Serial.print(' ');
-}
+  }
 
 void printHexMessage( uint8_t values[], uint8_t sz ) {
   for (uint8_t i = 0; i < sz; i++) {
@@ -65,7 +62,7 @@ void loop() {
   while ( millis() - startTime <= TIMEOUT ) {
     if (Serial1.available()) {
       printHexByte(Serial1.read());
-    }
+      }
   }
   Serial.println();
   delay(2000);
