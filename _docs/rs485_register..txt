@@ -1,0 +1,17 @@
+  // https://secondlifestorage.com/index.php?threads/limiter-inverter-with-rs485-load-setting.7631/
+  // Soyosource status frame:          0x23 0x01 0x01 0x00 0x00 0x01 0xDB 0x00 0xA1 0x00 0xDD 0x64 0x02 0xCA 0x01
+  // Full frame bytes:                   0    1    2    3    4    5    6    7    8    9   10   11   12   13   14
+  // Data bytes:                                             0    1    2    3    4    5    6    7    8    9   CRC
+  //
+  // Response of my broken soyosource: 0x23 0x01 0x01 0x00 0x04 0x02 0xBD 0x00 0x46 0x00 0xEF 0x64 0x02 0x43 0x20
+  //                                     0    1    2    3    4    5    6    7    8    9   10   11   12   13   14
+  // Data bytes:                                             0    1    2    3    4    5    6    7    8    9   CRC
+  //
+  //
+  // Data byte 0:          0x04 (Operation status)  0x00 (Normal), 0x01 (Startup), 0x02 (Standby),
+  //                                                0x03 (Startup aborted?), 0x04 (Error or battery mode?)
+  // Data byte 1...2: 0x01 0xDB (Battery voltage)
+  // Data byte 3...4: 0x00 0xA1 (Battery current)
+  // Data byte 5...6: 0x00 0xDD (AC voltage)
+  // Data byte 7:          0x64 (AC frequency / 2)
+  // Data byte 8...9: 0x02 0xCA (Temperature / 10.0 + 2 * 10)

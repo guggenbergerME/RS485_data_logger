@@ -10,61 +10,62 @@ RO (Receiver Output)        18
 */
 #include <Arduino.h>
 
-#define MAX485_DE_RE 4
+#define RS485_PIN_DIR 4
+#define RXD2 18
+#define TXD2 19
 
-// half second wait for a reply
-const uint32_t TIMEOUT = 500UL;
+HardwareSerial rs485(1);
 
-// canned message to your RS485 device
-uint8_t msg[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x03, 0x05, 0xCB};
+#define RS485_WRITE     1
+#define RS485_READ      0
 
+ 
 void setup() {
   Serial.begin(38400);
-  Serial1.begin(9600, SERIAL_8N1, 18, 19);
-  pinMode(MAX485_DE_RE, OUTPUT);
-  digitalWrite(MAX485_DE_RE, LOW);
-  delay(1000);
+  rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  pinMode(RS485_PIN_DIR,OUTPUT);
+  digitalWrite(RS485_PIN_DIR,RS485_READ);
+
 }
-
-void printHexByte(byte b)
-{
-  Serial.print((b >> 4) & 0xF, HEX);
-  Serial.print(b & 0xF, HEX);
-  Serial.print(' ');
-  }
-
-void printHexMessage( uint8_t values[], uint8_t sz ) {
-  for (uint8_t i = 0; i < sz; i++) {
-    printHexByte( values[i] );
-  }
-  Serial.println();
-}
-
 
 
 void loop() {
-  uint32_t startTime = 0;
 
-  Serial.print("TX: ");
-  printHexMessage( msg, sizeof(msg) );
+    byte  _incommingByte[60];
+    int   _cnt_byte=0;
+    
+ 
+     digitalWrite(RS485_PIN_DIR,RS485_READ);
+     
+     if(rs485.available()){     //receive data from rs485   
+      
+            //clear buffer
+            for(int i=0; i<sizeof(_incommingByte); i++) _incommingByte[i] = 0x02;
+            
+            
+            //collect byte data 
+            _cnt_byte=0; 
+            do{
+                _incommingByte[_cnt_byte++] = rs485.read();
+              }while(rs485.available()>0);
+                   
+            //debug monitor
+            Serial.println("");
+            for(int i=0; i < _cnt_byte; i++){
+                //Serial.print("-> [ "); Serial.print(i); Serial.print(" ] = "); Serial.print(_incommingByte[i],DEC); Serial.print(" [0x"); Serial.print(_incommingByte[i],HEX); Serial.print("] ");
+                //Serial.print(_incommingByte[i],DEC); Serial.print(" [0x"); Serial.print(_incommingByte[i],HEX); Serial.print("] ");
+                Serial.print(_incommingByte[i],DEC); Serial.print(" ");
+                //Serial.print(" 0x"); Serial.print(_incommingByte[i],HEX); Serial.print("");
+                
+                }    
+                
+                
 
-  // send the command
-  digitalWrite(MAX485_DE_RE, HIGH);
-  delay( 10 );
-  Serial1.write( msg, sizeof(msg) );
-  Serial1.flush();
-  digitalWrite(MAX485_DE_RE, LOW);
 
-  Serial.print("RX: ");
+ 
+      }   
+
+       delay(1000);
   
-  // read any data received and print it out
-  startTime = millis();
-  while ( millis() - startTime <= TIMEOUT ) {
-    if (Serial1.available()) {
-      printHexByte(Serial1.read());
-      }
-  }
-  Serial.println();
-  delay(2000);
 }
 
