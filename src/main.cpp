@@ -22,7 +22,7 @@ HardwareSerial rs485(1);
  
 void setup() {
   Serial.begin(38400);
-  rs485.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  rs485.begin(4800, SERIAL_8N1, RXD2, TXD2);
   pinMode(RS485_PIN_DIR,OUTPUT);
   digitalWrite(RS485_PIN_DIR,RS485_READ);
 
@@ -30,42 +30,28 @@ void setup() {
 
 
 void loop() {
-
-    byte  _incommingByte[60];
-    int   _cnt_byte=0;
+ 
+  // Import vom digitalen Soyo-Zähler-Unit (AC Power Meter) Rx13
+  if (rs485.available() >= 8) {
     
- 
-     digitalWrite(RS485_PIN_DIR,RS485_READ);
+     // Warten, bis genügend Daten empfangen wurden (8 Bytes)
+     byte data[8];
+     for (int i = 0; i < 8; i++) {
+      data[i] = rs485.read();  // Daten einlesen
+     }
+     Serial.print(data[0], HEX);Serial.print(" ");Serial.print(data[1], HEX);Serial.print(" ");Serial.print(data[2], HEX);Serial.print(" ");Serial.print(data[3], HEX);Serial.println(" ");
+     // Überprüfen, ob die ersten 4 Bytes gleich sind
      
-     if(rs485.available()){     //receive data from rs485   
-      
-            //clear buffer
-            for(int i=0; i<sizeof(_incommingByte); i++) _incommingByte[i] = 0x02;
-            
-            
-            //collect byte data 
-            _cnt_byte=0; 
-            do{
-                _incommingByte[_cnt_byte++] = rs485.read();
-              }while(rs485.available()>0);
-                   
-            //debug monitor
-            Serial.println("");
-            for(int i=0; i < _cnt_byte; i++){
-                //Serial.print("-> [ "); Serial.print(i); Serial.print(" ] = "); Serial.print(_incommingByte[i],DEC); Serial.print(" [0x"); Serial.print(_incommingByte[i],HEX); Serial.print("] ");
-                //Serial.print(_incommingByte[i],DEC); Serial.print(" [0x"); Serial.print(_incommingByte[i],HEX); Serial.print("] ");
-                Serial.print(_incommingByte[i],DEC); Serial.print(" ");
-                //Serial.print(" 0x"); Serial.print(_incommingByte[i],HEX); Serial.print("");
-                
-                }    
-                
-                
-
-
+    if (data[0] == 0x24 && data[1] == 0x56 && data[2] == 0x00 && data[3] == 0x21) {
  
-      }   
-
-       delay(1000);
+      byte chk = (byte)(264 - data[1] - data[0]);
+      // Leistung in Watt extrahieren
+      uint16_t Power = (data[4] << 8) | data[5];  
+  
+  // Serieller Monitor
+      Serial.print("Power: ");
+      Serial.println(Power);
   
 }
-
+}
+}
