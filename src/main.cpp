@@ -39,18 +39,28 @@ void loop() {
      for (int i = 0; i < 8; i++) {
       data[i] = rs485.read();  // Daten einlesen
      }
-     Serial.print(data[0], HEX);Serial.print(" ");Serial.print(data[1], HEX);Serial.print(" ");Serial.print(data[2], HEX);Serial.print(" ");Serial.print(data[3], HEX);Serial.println(" ");
+     Serial.print("0x");Serial.print(data[0], HEX);Serial.print(" 0x");Serial.print(data[1], HEX);Serial.print(" ");
+     Serial.print("0x");Serial.print(data[2], HEX);Serial.print(" 0x");Serial.print(data[3], HEX);Serial.print(" ");
+     Serial.print("0x");Serial.print(data[4], HEX);Serial.print(" 0x");Serial.print(data[5], HEX);Serial.print(" ");
+     Serial.print("0x");Serial.print(data[6], HEX);Serial.print(" 0x");Serial.print(data[7], HEX);Serial.println(" ");Serial.println(" ");
      // Überprüfen, ob die ersten 4 Bytes gleich sind
      
     if (data[0] == 0x24 && data[1] == 0x56 && data[2] == 0x00 && data[3] == 0x21) {
  
       byte chk = (byte)(264 - data[1] - data[0]);
       // Leistung in Watt extrahieren
+
+      Serial.print("Bit 4: "); Serial.println(data[4]);
+      Serial.print("Bit 5: "); Serial.println(data[5]);
+
       uint16_t Power = ((data[4] << 8) | data[5]) * 2;  
   
   // Serieller Monitor
-      Serial.print("Power: ");
-      Serial.println(Power);
+      Serial.print("Power: "); Serial.print(Power);
+      Serial.print(" CHKSUMME: "); Serial.println(chk);
+      Serial.println("");
+
+
   
 }
 }
