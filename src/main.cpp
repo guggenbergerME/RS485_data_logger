@@ -46,7 +46,7 @@ void loop() {
  
       byte chk = (byte)(264 - data[1] - data[0]);
       // Leistung in Watt extrahieren
-      uint16_t Power = (data[4] << 8) | data[5];  
+      uint16_t Power = ((data[4] << 8) | data[5]) * 2;  
   
   // Serieller Monitor
       Serial.print("Power: ");
